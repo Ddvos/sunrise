@@ -1,13 +1,10 @@
-version: '3.9'
-
 services:
   sunrise:
-    image: ghcr.io/https://github.com/Ddvos/sunrise:latest
+    build: . # build the image from the local Dockerfile
     container_name: sunrise
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - PORT=4173
-    # Only expose to localhost; Nginx will proxy to it
     ports:
       - '127.0.0.1:4173:4173'
