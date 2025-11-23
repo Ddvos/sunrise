@@ -1,10 +1,21 @@
 <script lang="ts">
 	import type { RGBColor } from '$lib/types/alarm';
+	import { onMount } from 'svelte';
 	import ColorPicker from './ColorPicker.svelte';
+	import mqtt from 'mqtt';
 
-	let isOn = $state(false);
 	let brightness = $state(80);
 	let color = $state<RGBColor>({ r: 255, g: 150, b: 50 });
+
+	let client: any = null;
+	let connected = $state(false);
+	let isOn = $state(false);
+	let status = $state('Connecting…');
+
+	const MQTT_URL = 'wss://morninglow.nl/mqtt';
+	const MQTT_USERNAME = 'webuser';
+	const MQTT_PASSWORD = 'webpassword';
+	const LED_TOPIC = 'esp32/led';
 
 	const colorStyle = $derived(`rgb(${color.r}, ${color.g}, ${color.b})`);
 	const glowStyle = $derived(
@@ -13,6 +24,9 @@
 
 	function togglePower() {
 		isOn = !isOn;
+		const payload = isOn ? 'on' : 'off';
+
+		client.publish(LED_TOPIC, payload);
 	}
 
 	// Quick presets
@@ -26,12 +40,62 @@
 	function applyPreset(presetColor: RGBColor) {
 		color = { ...presetColor };
 		if (!isOn) isOn = true;
+
+		client.subscribe(`esp32/led/${isOn}`);
 	}
+
+	onMount(async () => {
+		// Only run in the browser (important for SvelteKit)
+		if (typeof window === 'undefined') return;
+
+		client = mqtt.connect(MQTT_URL, {
+			username: MQTT_USERNAME,
+			password: MQTT_PASSWORD,
+			reconnectPeriod: 2000
+		});
+		console.log(client);
+
+		client.on('connect', () => {
+			connected = true;
+			status = 'Connected to MQTT';
+			// Optional: subscribe to some topic if you want feedback
+			// client.subscribe('esp32/led/state');
+
+			console.log('verbonden');
+		});
+
+		client.on('reconnect', () => {
+			console.log(client);
+			status = 'Reconnecting…';
+			connected = false;
+		});
+
+		client.on('close', () => {
+			status = 'Disconnected';
+			connected = false;
+		});
+
+		client.on('error', (err: any) => {
+			console.error('MQTT error', err);
+			status = 'Error connecting (see console)';
+		});
+
+		// Optional: handle messages back from ESP32
+		// client.on('message', (topic: string, payload: Uint8Array) => {
+		//   if (topic === 'esp32/led/state') {
+		//     ledOn = new TextDecoder().decode(payload) === 'on';
+		//   }
+		// });
+	});
+
+	$inspect(client);
 </script>
 
 <div class="mx-auto max-w-5xl space-y-8 px-4 py-8 pb-24 md:px-6 md:pb-8">
 	<!-- Power control -->
-	<div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 p-8">
+	<div
+		class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 p-8"
+	>
 		<!-- Ambient glow effect when light is on -->
 		<div
 			class="pointer-events-none absolute inset-0 transition-opacity duration-700"
@@ -99,13 +163,24 @@
 						? 'bg-amber-500/20 text-amber-400'
 						: 'bg-slate-700/30 text-slate-500'}"
 				>
-					<span
-						class="h-2 w-2 rounded-full {isOn
-							? 'animate-pulse bg-amber-400'
-							: 'bg-slate-500'}"
+					<span class="h-2 w-2 rounded-full {isOn ? 'animate-pulse bg-amber-400' : 'bg-slate-500'}"
 					></span>
 					{isOn ? 'Light On' : 'Light Off'}
 				</span>
+
+				<!-- MQTT Status -->
+				<div class="mt-4">
+					<span
+						class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium {connected
+							? 'bg-green-500/20 text-green-400'
+							: 'bg-red-500/20 text-red-400'}"
+					>
+						<span
+							class="h-2 w-2 rounded-full {connected ? 'animate-pulse bg-green-400' : 'bg-red-400'}"
+						></span>
+						{status}
+					</span>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -124,7 +199,7 @@
 					max="100"
 					bind:value={brightness}
 					disabled={!isOn}
-					class="brightness-slider h-4 w-full cursor-pointer appearance-none rounded-full outline-none transition-opacity {isOn
+					class="brightness-slider h-4 w-full cursor-pointer appearance-none rounded-full transition-opacity outline-none {isOn
 						? 'opacity-100'
 						: 'opacity-50'}"
 					style="background: linear-gradient(to right,

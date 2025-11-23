@@ -44,5 +44,8 @@
 			"esbuild",
 			"@tailwindcss/oxide"
 		]
+	},
+	"dependencies": {
+		"mqtt": "^5.14.1"
 	}
 }
