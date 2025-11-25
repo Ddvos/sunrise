@@ -296,8 +296,10 @@
 	}
 
 	.controls {
-		position: sticky;
+		position: fixed;
 		bottom: 0;
+		left: 0;
+		right: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -307,6 +309,7 @@
 		backdrop-filter: blur(30px);
 		border-top: 1px solid rgba(255, 255, 255, 0.1);
 		box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);
+		z-index: 10;
 	}
 
 	.progress-section {
