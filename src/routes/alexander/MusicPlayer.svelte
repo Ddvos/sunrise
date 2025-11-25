@@ -402,7 +402,7 @@
 
 	@media (max-width: 768px) {
 		.lyrics-content {
-			padding: calc(50vh - 80px) 20px;
+			padding: calc(50vh - 80px) 20px 250px 20px;
 		}
 
 		.line {
@@ -410,18 +410,18 @@
 		}
 
 		.controls {
-			padding: 20px 20px 30px;
-			gap: 20px;
+			padding: 20px 20px 20px;
+			gap: 15px;
 		}
 
 		.play-button {
-			width: 70px;
-			height: 70px;
+			width: 64px;
+			height: 64px;
 		}
 
 		.play-button svg {
-			width: 32px;
-			height: 32px;
+			width: 28px;
+			height: 28px;
 		}
 
 		.progress-section {
